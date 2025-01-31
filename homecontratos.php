@@ -299,8 +299,9 @@ include 'header.php';
         </tbody>
     </table>
 </div>
+
 <div class="container mt-5">
-        <div class="form-container3 d-flex" id="agenda" style="display:block;">
+        <div class="form-container3 d-flex" id="agenda" style="display:none;">
             <!-- Formulário de Agendamento -->
             <div class="form-left w-50 p-3 border-end">
                 <h3>Agendar Tarefa</h3>
