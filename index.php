@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             // Redireciona para a página com base no setor
             switch (strtolower($setor)) {
-                case 'administrativo':
+                case 'administrador':
                     header("Location: painel.php");
                     break;
                 case 'patrimonio':
