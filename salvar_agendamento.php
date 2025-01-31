@@ -3,7 +3,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 // Carregar o autoload do Composer
-require 'vendor/autoload.php';
+require './vendor/autoload.php';
 
 // Conexão com o banco de dados
 $servername = "localhost";
