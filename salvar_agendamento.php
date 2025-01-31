@@ -50,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $mail->send();
             echo "Agendamento salvo com sucesso e lembrete enviado!";
              // Redirecionar para a página de sucesso
-        header('Location: mensagem.php?mensagem=sucesso3&pagina=contrato.php');
+        header('Location: mensagem.php?mensagem=sucesso3&pagina=homecontratos.php');
         exit();
         } catch (Exception $e) {
             echo "Erro ao enviar o lembrete por e-mail: {$mail->ErrorInfo}";
