@@ -300,8 +300,8 @@ include 'header.php';
     </table>
 </div>
 
-<div class="container mt-5">
-        <div class="form-container3 d-flex" id="agenda" style="display:none;">
+
+<div class="form-container3 " id="agenda" style="display:none;">
             <!-- Formulário de Agendamento -->
             <div class="form-left w-50 p-3 border-end">
                 <h3>Agendar Tarefa</h3>
@@ -332,31 +332,31 @@ include 'header.php';
             </div>
 
             <?php
-// Conexão com o banco de dados
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "supat";
+    // Conexão com o banco de dados
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "supat";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+    $conn = new mysqli($servername, $username, $password, $dbname);
 
-if ($conn->connect_error) {
-    die("Conexão falhou: " . $conn->connect_error);
-}
-
-// Recuperando os agendamentos do banco de dados
-$sql = "SELECT id, nome, descricao, data_g, email FROM agendamentos";
-$result = $conn->query($sql);
-
-$agendamentos = [];
-if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        $data = $row['data_g'];
-        $agendamentos[$data][] = $row; // Organiza os agendamentos por data
+    if ($conn->connect_error) {
+        die("Conexão falhou: " . $conn->connect_error);
     }
-}
 
-$conn->close();
+    // Recuperando os agendamentos do banco de dados
+    $sql = "SELECT id, nome, descricao, data_g, email FROM agendamentos";
+    $result = $conn->query($sql);
+
+    $agendamentos = [];
+    if ($result->num_rows > 0) {
+        while($row = $result->fetch_assoc()) {
+            $data = $row['data_g'];
+            $agendamentos[$data][] = $row; // Organiza os agendamentos por data
+        }
+    }
+
+    $conn->close();
 ?>
 
 <!-- Lista de Agendamentos -->
@@ -431,8 +431,7 @@ $conn->close();
         </div>
     </div>
 </div>
-        </div>
-    </div>
+</div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
