@@ -1,73 +1,87 @@
 <?php
+
 include 'banco.php'; // Inclua a conexão com o banco de dados
 
-// Consultas para obter dados para os gráficos
-$statusQuery = "
-    SELECT situacao, COUNT(*) AS total
-    FROM patrimonio
-    GROUP BY situacao
-";
-
-$usuariosQuery = "
-    SELECT p.cadastrado_por AS usuario, COUNT(*) AS quantidade_cadastros
-    FROM patrimonio p
-    WHERE MONTH(p.data_registro) = MONTH(CURRENT_DATE()) 
-      AND YEAR(p.data_registro) = YEAR(CURRENT_DATE())
-    GROUP BY p.cadastrado_por
-    ORDER BY quantidade_cadastros DESC
-    LIMIT 5
-";
-
-$totalBensQuery = "SELECT COUNT(*) AS total FROM patrimonio";
-$ativosQuery = "SELECT COUNT(*) AS total FROM patrimonio WHERE situacao = 'ativo'";
-$emBaixaQuery = "SELECT COUNT(*) AS total FROM patrimonio WHERE situacao = 'Em Processo de baixa'";
-$mortosQuery = "SELECT COUNT(*) AS total FROM patrimonio WHERE situacao = 'inativo'";
-
-// Consulta para obter os últimos patrimônios cadastrados
-$ultimosPatrimoniosQuery = "SELECT id, codigo, nome, descricao, data_registro, situacao AS status FROM patrimonio ORDER BY data_registro DESC LIMIT 5";
-
 try {
-    // Executa as consultas e obtém os resultados
-    $statusResult = $con->query($statusQuery);
-    $usuariosResult = $con->query($usuariosQuery);
+    // Consultas para contagem e dados gerais
+    $totalBensQuery = "SELECT COUNT(*) AS total FROM patrimonio";
+    $ativosQuery = "SELECT COUNT(*) AS total FROM patrimonio WHERE situacao = 'ativo'";
+    $emBaixaQuery = "SELECT COUNT(*) AS total FROM patrimonio WHERE situacao = 'Em Processo de baixa'";
+    $mortosQuery = "SELECT COUNT(*) AS total FROM patrimonio WHERE situacao = 'inativo'";
+    $totalUsuariosQuery = "SELECT COUNT(*) AS total FROM usuario";
+    $totalSetoresQuery = "SELECT COUNT(*) AS total FROM setores";
 
-    // Processa os resultados dos status
-    $statusData = [];
-    while ($row = $statusResult->fetch_assoc()) {
-        $statusData[] = ['label' => $row['situacao'], 'value' => (int) $row['total']];
-    }
+    // Consulta para obter o último usuário logado
+    $ultimoUsuarioLogadoQuery = "
+        SELECT u.username, u.username, le.data_operacao
+        FROM log_eventos le
+        INNER JOIN usuario u 
+        ON le.matricula = u.username
+        WHERE le.tipo_operacao LIKE '%login%'
+        ORDER BY le.data_operacao DESC
+        LIMIT 1";
 
-    // Processa os resultados dos usuários
-    $usuariosData = [];
-    while ($row = $usuariosResult->fetch_assoc()) {
-        $usuariosData[] = ['usuario' => $row['usuario'], 'quantidade' => (int) $row['quantidade_cadastros']];
-    }
+        $sql_ultimasAlteracoesSetores = "
+        SELECT le.data_operacao AS data_hora, le.tipo_operacao, u.setor 
+        FROM log_eventos le
+        INNER JOIN usuario u ON le.matricula = u.matricula
+        WHERE le.tipo_operacao LIKE '%alterou%' OR le.tipo_operacao LIKE '%atualizou%' OR le.tipo_operacao LIKE '%Logou%'
+        ORDER BY le.data_operacao DESC
+        LIMIT 5"; 
 
-    // Dados para as estatísticas principais
+    // Consulta para obter os usuários que mais cadastraram
+    $sql_usuarios_cadastros = "
+        SELECT le.matricula AS usuario, u.setor, COUNT(*) AS total_cadastros
+        FROM log_eventos le
+        INNER JOIN usuario u 
+        ON le.matricula = u.username
+        WHERE le.tipo_operacao LIKE '%cadastrou%' OR le.tipo_operacao LIKE '%atualizou%'
+        GROUP BY le.matricula, u.setor
+        ORDER BY total_cadastros DESC
+        LIMIT 5";
+
+    // Executa as consultas
     $totalBens = $con->query($totalBensQuery)->fetch_assoc()['total'] ?? 0;
     $bensAtivos = $con->query($ativosQuery)->fetch_assoc()['total'] ?? 0;
     $bensEmBaixa = $con->query($emBaixaQuery)->fetch_assoc()['total'] ?? 0;
     $bensMortos = $con->query($mortosQuery)->fetch_assoc()['total'] ?? 0;
+    $totalUsuarios = $con->query($totalUsuariosQuery)->fetch_assoc()['total'] ?? 0;
+    $totalSetores = $con->query($totalSetoresQuery)->fetch_assoc()['total'] ?? 0;
 
-    // Adiciona o total de bens cadastrados nos dados do gráfico de status
-    $statusData[] = ['label' => 'Total de Bens Cadastrados', 'value' => $totalBens];
+    // Último usuário logado
+    $result_ultimoUsuarioLogado = $con->query($ultimoUsuarioLogadoQuery);
+    if ($result_ultimoUsuarioLogado && $result_ultimoUsuarioLogado->num_rows > 0) {
+        $ultimoUsuarioLogado = $result_ultimoUsuarioLogado->fetch_assoc();
+        $ultimoUsuarioNome = $ultimoUsuarioLogado['username'];
+        $ultimoUsuarioData = $ultimoUsuarioLogado['data_operacao'];
+    } else {
+        $ultimoUsuarioNome = 'Nenhum usuário encontrado';
+        $ultimoUsuarioData = 'N/A';
+    }
 
-    // Executa a consulta para os últimos patrimônios
-    $result = $con->query($ultimosPatrimoniosQuery);
-    $ultimosPatrimonios = [];
-    if ($result) {
-        $ultimosPatrimonios = $result->fetch_all(MYSQLI_ASSOC);
+    // Executa a consulta
+$result_ultimasAlteracoesSetores = $con->query($sql_ultimasAlteracoesSetores);
+
+// Verifica se há resultados
+if (!$result_ultimasAlteracoesSetores) {
+    die("Erro na consulta: " . $con->error);
+}
+
+    // Usuários que mais cadastraram
+    $result_usuarios_cadastros = $con->query($sql_usuarios_cadastros);
+    if (!$result_usuarios_cadastros) {
+        die("Erro na consulta de usuários: " . $con->error);
     }
 } catch (Exception $e) {
     echo "Erro ao consultar o banco de dados: " . $e->getMessage();
     exit();
 }
 
+include 'header.php';
 // Fecha a conexão
 $con->close();
-
-include 'header.php';
 ?>
+
 
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -150,27 +164,34 @@ include 'header.php';
             </div>
 
             <!-- Tabela de Usuários que Mais Cadastraram -->
-            <div class="table-container">
-                <h3>Usuários que Mais Cadastraram Bens no mês</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Usuário</th>
-                            <th>Setor</th>
-                            <th>Quantidade de Cadastros</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($usuario = $usuariosResult->fetch_assoc()): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($usuario['usuario']); ?></td>
-                                <td><?php echo htmlspecialchars($usuario['setor']); ?></td>
-                                <td><?php echo htmlspecialchars($usuario['quantidade_cadastros']); ?></td>
-                            </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
+            <<!-- Tabela de últimas alterações nos setores -->
+<div class="table-container">
+    <h3>Últimas Alterações nos Setores</h3>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Data e Hora</th>
+                <th>Operação</th>
+                <th>Setor</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if ($result_ultimasAlteracoesSetores->num_rows > 0): ?>
+                <?php while ($alteracao = $result_ultimasAlteracoesSetores->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($alteracao['data_hora']); ?></td>
+                        <td><?php echo htmlspecialchars($alteracao['tipo_operacao']); ?></td>
+                        <td><?php echo htmlspecialchars($alteracao['setor']); ?></td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="3">Nenhuma alteração encontrada.</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
         </div>
     </div>
 

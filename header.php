@@ -92,6 +92,13 @@ try {
                 ['link' => 'rh.php', 'nome' => 'Assinatura webmail', 'icon' => 'envelope'],
             ];
             break;
+            case 'contratos':
+                $menuItens = [
+                    ['link' => 'homecontratos.php', 'nome' => 'Painel'],
+                    ['link' => 'rh.php', 'nome' => 'Assinatura webmail'],
+                    ['link' => 'perfil.php', 'nome' => 'Perfil'],
+                ];
+                break;
 
         default:
             // Caso o setor não seja reconhecido, redireciona para a página de erro
